@@ -32,33 +32,38 @@ func notify(t *Transfer) {
 	auth := smtp.PlainAuth("", viper.GetString("smtp_user"), viper.GetString("smtp_pass"), host)
 	err := smtp.SendMail(dest, auth, viper.GetString("mail_from"), []string{to}, []byte(msg))
 	HandleErr("Failed to send email:", err)
+
+	log.Println("Successfully sent email")
 }
 
-func handleLogEntry(xferCh chan fsnotify.Event) {
-	dir := Expand(viper.GetString("log_dir"))
-	name := viper.GetString("log_name")
-	logFile := filepath.Join(dir, name)
-
+func handleLogEntry(xferCh chan fsnotify.Event, logFile string) {
 	for {
 		select {
-		case ev := <-xferCh:
-			if ev.Name != logFile {
-				continue
-			}
-
+		case <-xferCh:
 			xfer := ParseXferLogEntry(GetLatestXfer(logFile))
+			log.Println("Parsed log entry; attempting to notify...")
 			notify(&xfer)
 		}
 	}
 }
 
-func watchTransferLog(xferCh chan fsnotify.Event, watcher *fsnotify.Watcher) {
+func watchTransferLog(xferCh chan fsnotify.Event, logFile string, watcher *fsnotify.Watcher) {
+	md5Cache := map[string]string{}
+
 	for {
 		select {
 		case event := <-watcher.Events:
 			switch {
 			case event.Op&fsnotify.Write == fsnotify.Write:
-				xferCh <- event
+				if event.Name == logFile {
+					checksum := Hash(event.Name)
+					if md5Cache[event.Name] != checksum {
+						xferCh <- event
+						if checksum != "" {
+							md5Cache[event.Name] = checksum
+						}
+					}
+				}
 			}
 
 		case err := <-watcher.Errors:
@@ -87,6 +92,8 @@ func main() {
 	done := make(chan bool)
 	xferCh := make(chan fsnotify.Event)
 	dir := Expand(viper.GetString("log_dir"))
+	name := viper.GetString("log_name")
+	logFile := filepath.Join(dir, name)
 
 	ctx := &daemon.Context{
 		PidFileName: dir + "/proftpd_notify.pid",
@@ -104,12 +111,13 @@ func main() {
 
 	watcher, err := fsnotify.NewWatcher()
 	defer watcher.Close()
-	HandleErr("Failed to create new watcher:", err)
+	HandleErr("Failed to create new watcher: ", err)
 
 	err = watcher.Add(dir)
-	HandleErr("Failed to watch directory:", err)
+	HandleErr("Failed to watch directory: ", err)
 
-	go watchTransferLog(xferCh, watcher)
-	go handleLogEntry(xferCh)
+	log.Println("Listening for changes to", logFile)
+	go watchTransferLog(xferCh, logFile, watcher)
+	go handleLogEntry(xferCh, logFile)
 	<-done
 }

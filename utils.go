@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"io"
 	"log"
 	"os"
 	"os/user"
@@ -22,13 +25,27 @@ func HandleErr(msg string, err error) {
 
 func GetLatestXfer(path string) string {
 	file, err := os.Open(path)
-	HandleErr("Unable to open log file:", err)
+	HandleErr("Unable to open log file: ", err)
 	defer file.Close()
 
-	buf := make([]byte, bytesPerLine)
-	file.Seek(-bytesPerLine, 2)
-	_, err = file.Read(buf)
-	HandleErr("Unable to read file:", err)
+	stat, _ := file.Stat()
+	size := stat.Size()
+
+	var buf []byte
+	cursor := int64(0)
+	for cursor > -size {
+		cursor--
+
+		file.Seek(cursor, io.SeekEnd)
+		b := make([]byte, 1)
+		file.Read(b)
+
+		if cursor != -1 && b[0] == 10 || b[0] == 13 {
+			break
+		}
+
+		buf = append(b, buf...)
+	}
 
 	return string(buf)
 }
@@ -36,7 +53,7 @@ func GetLatestXfer(path string) string {
 func Expand(path string) string {
 	if path[0] == '~' || strings.HasPrefix(path, "$HOME") {
 		user, err := user.Current()
-		HandleErr("Failed to get current user:", err)
+		HandleErr("Failed to get current user: ", err)
 
 		rest := strings.TrimLeftFunc(path, func(r rune) bool {
 			return r != os.PathSeparator
@@ -46,4 +63,17 @@ func Expand(path string) string {
 	}
 
 	return path
+}
+
+func Hash(path string) string {
+	file, err := os.Open(path)
+	HandleErr("Failed to open file: ", err)
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		HandleErr("Failed to create hash: ", err)
+	}
+
+	return hex.EncodeToString(hash.Sum(nil))
 }
