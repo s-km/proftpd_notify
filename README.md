@@ -4,7 +4,7 @@ ftpmail wasn't working for me so i built a scuffed version in go because fuck pe
 
 ## Installation
 
-Clone the repo, then run `go mod install` followed by `go build -o proftpd_notify`.
+Clone the repo, then run `go mod download` followed by `go build -o proftpd_notify`.
 Move the resulting binary into a folder included in your `$PATH` and make it executable (eg. `chmod +x proftpd_notify && mv proftpd_notify ~/bin`).
 
 ## Configuration

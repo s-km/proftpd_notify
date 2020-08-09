@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	bytesPerLine     = 144
+	bytesPerLine     = 147
 	dateFormat       = "Mon Jan 02 15:04:05 2006"
 	dateOutputFormat = "Monday, January 2nd 2006 (03:04:05PM)"
 )
@@ -21,7 +21,6 @@ func HandleErr(msg string, err error) {
 }
 
 func GetLatestXfer(path string) string {
-	log.Println("Attemping to open file:", path)
 	file, err := os.Open(path)
 	HandleErr("Unable to open log file:", err)
 	defer file.Close()

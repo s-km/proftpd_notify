@@ -91,7 +91,6 @@ func main() {
 	HandleErr("Failed to create new watcher:", err)
 
 	dir := Expand(viper.GetString("log_dir"))
-	log.Println("Watching:", dir)
 	err = watcher.Add(dir)
 	HandleErr("Failed to watch directory:", err)
 
