@@ -1,6 +1,8 @@
 # proftpd_notify
 
-ftpmail wasn't working for me so i built a scuffed version in go because fuck perl
+ftpmail wasn't working for me so I built a scuffed version in go because fuck perl :^)
+
+I  realize you're supposed to toss pid files into `/var/run`, but because this is intended for use on a shared server without root access I had to be a little creative with where I put it.
 
 ## Installation
 
@@ -31,7 +33,5 @@ Configuration is done via the `notify_config.json` file, either in your `$HOME` 
 
 ## Usage
 
-Similar to `ftpmail`, after configuring `proftpd_notify` just run it as a background process (eg. `proftpd_notify &` assuming it is in your `$PATH`).
+After creating the config file, just run `proftpd_notify` to start the daemon.  The pid file is stored in the same directory as the transfer log, so you can stop the daemon using `kill $(cat /your/transferlog/dir/proftpd_notify.pid)`.
 The order in this case doesn't matter - you can run `proftpd_notify` before or after you've started `proftpd`.
-
-

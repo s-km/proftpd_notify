@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/sevlyar/go-daemon"
 	"github.com/spf13/viper"
 )
 
@@ -85,12 +86,26 @@ func init() {
 func main() {
 	done := make(chan bool)
 	xferCh := make(chan fsnotify.Event)
+	dir := Expand(viper.GetString("log_dir"))
+
+	ctx := &daemon.Context{
+		PidFileName: dir + "/proftpd_notify.pid",
+		PidFilePerm: 0644,
+		LogFileName: dir + "/proftpd_notify.log",
+		LogFilePerm: 0640,
+	}
+
+	d, err := ctx.Reborn()
+	HandleErr("Failed to start: ", err)
+	if d != nil {
+		return
+	}
+	defer ctx.Release()
 
 	watcher, err := fsnotify.NewWatcher()
 	defer watcher.Close()
 	HandleErr("Failed to create new watcher:", err)
 
-	dir := Expand(viper.GetString("log_dir"))
 	err = watcher.Add(dir)
 	HandleErr("Failed to watch directory:", err)
 
