@@ -19,7 +19,7 @@ func notify(t *Transfer) {
 	msg := fmt.Sprintf("To: %s\r\n", to) +
 		fmt.Sprintf("Subject: New file %s\r\n", t.Direction) +
 		"\r\n" +
-		fmt.Sprintf("%s was %s by %s (%s) at %s.\nTransferred %s in %s\r\n.",
+		fmt.Sprintf("%s was %s by %s (%s) at %s.\nTransferred %s in %s.\r\n",
 			t.Filename,
 			t.Direction,
 			t.User,
